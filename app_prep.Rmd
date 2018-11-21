@@ -1,0 +1,114 @@
+---
+title: "Working with Data"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(knitr)
+library(janitor)
+library(fs)
+library(lazyeval)
+library(kableExtra)
+library(stringr)
+library(formattable)
+```
+
+```{r}
+#READING IN THE DATA:
+
+# Election Results Data
+data <- read_csv("mt_2_results.csv") %>%
+  clean_names()
+
+# Polling Data:
+download.file(url = "https://goo.gl/ZRCBda",
+              destfile = "master.zip",
+              quiet = TRUE,
+              mode = "wb")
+
+unzip("master.zip")
+
+filenames <- dir_ls("2018-live-poll-results-master/data/")
+
+x <- map_dfr(filenames, read_csv, .id = "source") 
+
+x$source <- str_sub(x$source, 51, 56)
+
+# Context Data:
+
+context <- read_csv("https://raw.githubusercontent.com/MEDSL/2018-elections/master/election-context-2018.csv")
+```
+
+```{r}
+
+#Using a modified version of the code I used in the second midterm:
+
+#Polling data
+poll_data <- x %>%
+  mutate(new_source = str_sub(source, 1, 6)) %>% 
+  filter(!str_detect(new_source, "sen")) %>%
+  filter(!str_detect(new_source, "gov")) %>%
+  separate(new_source, c("district", "wave"), sep = "-") %>%
+  group_by(district, response, wave) %>%
+  tally(final_weight) %>% 
+  spread(key = response, value = n) %>%
+  group_by(district) %>%
+  mutate_all(funs_(interp(~replace(., is.na(.),0)))) %>% 
+  clean_names() %>%
+  mutate(dem_adv = (dem/(dem + rep + und + x3 + x4 + x5 + x6)) * 100 - (rep/(dem + rep + und + x3 + x4 + x5 + x6)) * 100) %>% 
+  select(district, wave, dem_adv) %>%
+  spread(key = wave, value = dem_adv) %>%
+  clean_names() %>%
+  mutate(poll_1 = coalesce(x1, x2)) %>%
+  mutate(last_poll = coalesce(poll_1, x3)) %>%
+  select(district, last_poll) %>%
+  ungroup(district) %>%
+  mutate(district = str_to_upper(district))
+
+#Results Data:
+js_data <- data %>%
+  mutate(district = str_c(state, district, sep = "", collapse = NULL)) %>%
+  group_by(district) %>%
+  mutate(actual_results = (dem_votes- rep_votes)/(rep_votes + dem_votes + other_votes)*100) %>%
+  select(district, actual_results) %>%
+  ungroup(district) %>%
+  mutate(district = str_to_upper(district))
+
+#Joining both to get error variable:
+error_data <- poll_data %>%
+  inner_join(js_data, by = "district") %>%
+  mutate(error = last_poll - actual_results) %>%
+  mutate_if(is.numeric, round, 1) %>% 
+  mutate(District = as.numeric(str_extract(district, "[0-9]+"))) %>%
+  mutate(state = str_extract(district, "[aA-zZ]+")) %>%
+  select(state, District, error)
+ 
+context_data <- context %>%
+  mutate(state = state.abb[match(state, state.name)]) %>%
+  filter(!is.na(state)) %>%
+  group_by(state) %>%
+  summarise(trump16 = sum(trump16), clinton16 = sum(clinton16),
+            romney12 = sum(romney12), obama12 = sum(obama12),
+            rephouse16 = sum(rephouse16), demhouse16 = sum (demhouse16)) %>%
+  mutate(total16 = trump16 + clinton16, total12 = romney12 + obama12, total_house16 = rephouse16 + demhouse16) %>%
+  mutate(trump16 = (trump16/total16)*100,
+         clinton16 = (clinton16/total16)*100,
+         romney12 = (romney12/total12)*100,
+         obama12 = (obama12/total12)*100,
+         rephouse16 = (rephouse16/total_house16)*100,
+         demhouse16 = (demhouse16/total_house16)*100) %>%
+  mutate_if(is.numeric, round, 1) %>%
+  mutate_all(funs_(interp(~replace(., is.na(.),0)))) %>% #In the original datasets, the current NAs were 0. Turning those back.
+  select(state, trump16, clinton16, romney12, obama12, rephouse16, demhouse16)
+
+
+graph1 <- error_data %>%
+  left_join(context_data, by = "state")
+
+write_rds(graph1, "graph1.rds")
+write_rds(graph1, "midterm_analysis/graph1.rds")
+```
+
