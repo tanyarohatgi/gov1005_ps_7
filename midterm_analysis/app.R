@@ -13,6 +13,7 @@ library(ggplot2)
 
 data <- read_rds("graph1.rds")
 
+
 # Define UI for application that draws a histogram
 ui <- fluidPage(
   
@@ -27,8 +28,10 @@ ui <- fluidPage(
         label = "X-Axis: Select Vote Shares from Recent Elections:",
         choices = c("Clinton, 2016" = "clinton16", "Trump, 2016" = "trump16", "Democrats in the House, 2016" = "demhouse16", "Republicans in the House, 2016" = "rephouse16", 
                     "Obama, 2012" = "obama12",
-                    "Romney, 2012" = "romney12"),
-      )),
+                    "Romney, 2012" = "romney12")
+      )
+      
+      ),
     
     # Show a plot of the generated distribution
     mainPanel(
@@ -57,8 +60,9 @@ server <- function(input, output) {
     
     
     data %>%
-      ggplot(aes_string(x = input$x, y = "error", color = "state")) + 
-      geom_jitter() + xlab(x()) + ylab("Polling Error (in %)") + 
+      ggplot(aes_string(input$x, "error", color = "state")) + 
+      geom_point() + geom_smooth(aes_string(input$x, "error"), method = "lm", inherit.aes = F) +
+      xlab(x()) + ylab("Polling Error (in %)") + 
       ggtitle("Placeholder:") + 
       labs(subtitle = "Placeholder") + 
       theme_minimal() + labs(color = "State")
