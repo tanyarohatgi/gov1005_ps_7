@@ -216,7 +216,7 @@ if (input$bestfit2 == TRUE) {
     new %>%
       filter(stance == input$p_i) %>%
       ggplot(aes_string("count", "error", color = "district")) + geom_point(size = 3) +
-      xlab("No. of Respondents That Agree") + ylab("Polling Error (in %)") +
+      xlab("No. of Respondents That Agree (in %)") + ylab("Polling Error (in %)") +
      geom_smooth(aes_string("count", "error"), method = "lm", inherit.aes = F) +
       stat_cor(aes_string("count", "error"), method = "pearson", show.legend = NA,
              inherit.aes = FALSE, geom = "text") +
@@ -232,7 +232,7 @@ if (input$bestfit2 == TRUE) {
       new %>%
         filter(stance == input$p_i) %>%
         ggplot(aes_string("count", "error", color = "district")) + geom_point(size = 3) +
-        xlab("No. of Respondents That Agree") + ylab("Polling Error (in %)") +
+        xlab("No. of Respondents That Agree (in %)") + ylab("Polling Error (in %)") +
         ggtitle("Correlation between 2018 Midterm Polling Errors and Policy/Ideological Positions Held by Poll Respondents:") + 
         labs(subtitle = "Polling error calculated as difference between polled Democratic advantage and actual Democratic advantage.") + 
         theme_linedraw() + labs(color = "District") +  
