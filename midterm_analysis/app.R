@@ -18,7 +18,7 @@ data <- read_rds("graph1.rds")
 ui <- fluidPage(
   
   # Application title
-  titlePanel("Political Landscape Survey, Summer 2017"),
+  titlePanel("UpShot/Siena Polling Errors, Midterms 2018"),
   
   # Sidebar with a slider input for number of bins 
   sidebarLayout(
@@ -29,15 +29,17 @@ ui <- fluidPage(
         choices = c("Clinton, 2016" = "clinton16", "Trump, 2016" = "trump16", "Democrats in the House, 2016" = "demhouse16", "Republicans in the House, 2016" = "rephouse16", 
                     "Obama, 2012" = "obama12",
                     "Romney, 2012" = "romney12")
-      )
+      ),
+      
+      checkboxInput("bestfit", label = "Show line of best fit")
       
       ),
     
     # Show a plot of the generated distribution
     mainPanel(
       plotOutput("scatterPlot")
-    )
-  )
+    ))
+  
 )
 
 # Define server logic required to draw a histogram
@@ -58,6 +60,7 @@ server <- function(input, output) {
       })
     
     
+    if(input$bestfit == TRUE) {
     
     data %>%
       ggplot(aes_string(input$x, "error", color = "state")) + 
@@ -67,8 +70,19 @@ server <- function(input, output) {
       labs(subtitle = "Placeholder") + 
       theme_minimal() + labs(color = "State")
     
+    }
     
+    else {
+      
+      data %>%
+      ggplot(aes_string(input$x, "error", color = "state")) + geom_point() +
+        xlab(x()) + ylab("Polling Error (in %)") + 
+        ggtitle("Correlation between 2018 Midterm Polling Errors and Voting Trends in Previous Elections:") + 
+        labs(subtitle = "Polling error calculated as difference between polled democratic advantage and actual democratic advantage.") + 
+        theme_minimal() + labs(color = "State")
+        
     
+    }
   })
 }
 
