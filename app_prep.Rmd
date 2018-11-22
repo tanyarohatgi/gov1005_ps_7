@@ -14,6 +14,7 @@ library(lazyeval)
 library(kableExtra)
 library(stringr)
 library(formattable)
+library(devtools)
 ```
 
 ```{r}
@@ -109,8 +110,7 @@ graph1 <- error_data %>%
   left_join(context_data, by = "state")
 
 
-y <- graph1 %>%
-  mutate(region = str_replace_all(region, c("ME" = "Northeast", "NJ" = "Northeast", "NY" = "Northeast", "PA" = "Northeast", "IA" = "Midwest", "IL" = "Midwest", "KS" = "Midwest", "MI" = "Midwest", "MN" = "Midwest", "NE" = "Midwest", "OH"= "Midwest", "WI" = "Midwest", "FL" = "South", "GA" = "South", "KY" = "South", "NC" = "South", "TX" = "South", "VA" = "South", "WV" = "South", "AZ" = "West", "CA" = "West", "CO" = "West", "NM" = "West", "UT" = "West", "WA" = "West")))
+stat_smooth()
 
 
 write_rds(graph1, "graph1.rds")
