@@ -10,12 +10,12 @@
 library(tidyverse)
 library(shiny)
 library(ggplot2)
-library(plotly)
+library(ggpubr)
+library(devtools)
 
 data <- read_rds("graph1.rds")
 
 
-# Define UI for application that draws a histogram
 ui <- fluidPage(
   
   # Application title
