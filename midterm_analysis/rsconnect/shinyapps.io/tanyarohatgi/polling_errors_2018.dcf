@@ -1,0 +1,12 @@
+name: polling_errors_2018
+title: polling_errors_2018
+username:
+account: tanyarohatgi
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 584463
+bundleId: 1714827
+url: https://tanyarohatgi.shinyapps.io/polling_errors_2018/
+when: 1542887029.59297
+asMultiple: FALSE
+asStatic: FALSE

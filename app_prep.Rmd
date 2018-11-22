@@ -14,7 +14,6 @@ library(lazyeval)
 library(kableExtra)
 library(stringr)
 library(formattable)
-library(devtools)
 ```
 
 ```{r}
@@ -45,9 +44,11 @@ context <- read_csv("https://raw.githubusercontent.com/MEDSL/2018-elections/mast
 
 ```{r}
 
+#Despite this being a prep file I added a few comments here and there for clarity.
+
 #Using a modified version of the code I used in the second midterm:
 
-#Polling data
+#Polling data:
 poll_data <- x %>%
   mutate(new_source = str_sub(source, 1, 6)) %>% 
   filter(!str_detect(new_source, "sen")) %>%
@@ -59,7 +60,7 @@ poll_data <- x %>%
   group_by(district) %>%
   mutate_all(funs_(interp(~replace(., is.na(.),0)))) %>% 
   clean_names() %>%
-  mutate(dem_adv = (dem/(dem + rep + und + x3 + x4 + x5 + x6)) * 100 - (rep/(dem + rep + und + x3 + x4 + x5 + x6)) * 100) %>% 
+  mutate(dem_adv = (dem/(dem + rep + und + x3 + x4 + x5 + x6)) * 100 - (rep/(dem + rep + und + x3 + x4 + x5 + x6)) * 100) %>% #Calculating poll Dem. advantage.
   select(district, wave, dem_adv) %>%
   spread(key = wave, value = dem_adv) %>%
   clean_names() %>%
@@ -73,7 +74,7 @@ poll_data <- x %>%
 js_data <- data %>%
   mutate(district = str_c(state, district, sep = "", collapse = NULL)) %>%
   group_by(district) %>%
-  mutate(actual_results = (dem_votes- rep_votes)/(rep_votes + dem_votes + other_votes)*100) %>%
+  mutate(actual_results = (dem_votes- rep_votes)/(rep_votes + dem_votes + other_votes)*100) %>% #Calculating actual Dem. advantage.
   select(district, actual_results) %>%
   ungroup(district) %>%
   mutate(district = str_to_upper(district))
@@ -83,12 +84,13 @@ error_data <- poll_data %>%
   inner_join(js_data, by = "district") %>%
   mutate(error = last_poll - actual_results) %>%
   mutate_if(is.numeric, round, 1) %>% 
-  mutate(District = as.numeric(str_extract(district, "[0-9]+"))) %>%
-  mutate(state = str_extract(district, "[aA-zZ]+")) %>%
+  mutate(District = as.numeric(str_extract(district, "[0-9]+"))) %>% 
+  mutate(state = str_extract(district, "[aA-zZ]+")) %>% #Splitting state+district column into two distinct columns.
   select(state, District, error)
  
+#Working with context data:
 context_data <- context %>%
-  mutate(state = state.abb[match(state, state.name)]) %>%
+  mutate(state = state.abb[match(state, state.name)]) %>% #Changing state name to state code.
   filter(!is.na(state)) %>%
   group_by(state) %>%
   summarise(trump16 = sum(trump16), clinton16 = sum(clinton16),
@@ -100,18 +102,14 @@ context_data <- context %>%
          romney12 = (romney12/total12)*100,
          obama12 = (obama12/total12)*100,
          rephouse16 = (rephouse16/total_house16)*100,
-         demhouse16 = (demhouse16/total_house16)*100) %>%
+         demhouse16 = (demhouse16/total_house16)*100) %>% #Calculating percentage of the vote received by the above candidates/candidate groups.
   mutate_if(is.numeric, round, 1) %>%
   mutate_all(funs_(interp(~replace(., is.na(.),0)))) %>% #In the original datasets, the current NAs were 0. Turning those back.
   select(state, trump16, clinton16, romney12, obama12, rephouse16, demhouse16)
 
 
 graph1 <- error_data %>%
-  left_join(context_data, by = "state")
-
-
-stat_smooth()
-
+  left_join(context_data, by = "state") #Joining the two datasets in order to have error and context data in the same variable for use in the Shiny app.
 
 write_rds(graph1, "graph1.rds")
 write_rds(graph1, "midterm_analysis/graph1.rds")

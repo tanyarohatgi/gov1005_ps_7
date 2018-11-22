@@ -11,7 +11,6 @@ library(tidyverse)
 library(shiny)
 library(ggplot2)
 library(plotly)
-library(devtools)
 
 data <- read_rds("graph1.rds")
 
@@ -20,12 +19,12 @@ data <- read_rds("graph1.rds")
 ui <- fluidPage(
   
   # Application title
-  titlePanel("UpShot/Siena House Polling Errors, Midterms 2018"),
+  titlePanel("UpShot/Siena House Race Polling Errors, 2018"),
   
   sidebarLayout(
     sidebarPanel(
       radioButtons(inputId="choice", label="Select a Summary Statistic:", 
-                   choices=c("View frequencies only.", "Show mean.","Show mean, median, density plot, and density curve.")
+                   choices=c("View frequencies only.", "Show mean.","Show mean, median, density histogram, and density curve.")
                    ),
       
       sliderInput("bins",
@@ -40,12 +39,12 @@ ui <- fluidPage(
     
     # Show a plot of the generated distribution
     mainPanel(
-      h3("Understanding Polling Errors:"),
+      h3("1. Understanding Polling Errors:"),
       plotOutput("barPlot"),
       p(""),
       p("From the mean we see that on average, actual Democratic advantage was slightly greater than last-wave polled Democratic advantage in House races. This means that the polls often underestimated Democratic winnability.
-        From the mean (right) and median (left) we see that the histogram is very slightly right-skewed",
-        style = "font-size : 9pt"),
+        We see that the histogram is very slightly right-skewed (arguably, almost a normal distribution); the median is just to the left of the mean. From this we can posit that there exist a handful of large values where polled Dem. adv. > actual Dem. adv. that are driving the mean slightly upwards.",
+        style = "font-size : 10pt"),
       p("")
     )),
   
@@ -61,20 +60,20 @@ ui <- fluidPage(
                     "Romney, 2012" = "romney12")
       ),
       
-      checkboxInput("bestfit", label = "Show line of best fit")
+      checkboxInput("bestfit", label = "Show line of best fit.")
       
       ),
     
     # Show a plot of the correlations
     mainPanel(
-      h3("Polling Errors in Context:"),
+      h3("2. Polling Errors in Context:"),
       plotOutput("scatterPlot"),
       p(""),
       p("Thus we see no strong correlation between the way people voted in the last House elections, or in the 2016 and 2012 Presidential elections, and polling errors for the 2018 midterms (all R<0.01).
          For example, a higher percentage of votes for Hillary Clinton has no notable correlation to a greater overestimation of Democratic candidates in 2018 House races. Similarly, there is no notable correlation between a higher percentage of votes for Democratic candidates in 2016 House races, and a greater overestimation of Democratic chances in 2018 House races.",
          style = "font-size : 9pt"),
-      p("Furthermore, given the p-values much higher than the commonly accepted significance cut-off of 0.05, we must reject our null hypothesis (that a statistically significant correlation between the x-axis varaiables and polling error exists), and so we cannot conclude that such a relationship exists.",
-        style = "font-size : 9pt"),
+      p("Furthermore, given that the p-values much higher than the commonly accepted significance cut-off of 0.05, we must reject our null hypothesis (that a statistically significant correlation between the x-axis variables and polling error exists), and so we cannot conclude that such a relationship exists.",
+        style = "font-size : 10pt"),
       h4("")
     ))
   
@@ -87,7 +86,7 @@ server <- function(input, output) {
   
   output$barPlot <- renderPlot(
     
-    if(input$choice == "Show mean, median, density plot, and density curve.") {
+    if(input$choice == "Show mean, median, density histogram, and density curve.") {
       
       data %>%
         ggplot(aes_string(x = "error")) + geom_histogram(aes(y = ..density.., fill = ..density..), binwidth = input$bins) + 
@@ -96,10 +95,11 @@ server <- function(input, output) {
         ggtitle("Density Distribution of Polling Errors (in %):") +
         labs(subtitle = "Polling error calculated as difference between polled democratic advantage and actual democratic advantage.") +
         xlab("Polling Error (in %)") +
-        scale_y_continuous(name = "Count") +
-        scale_fill_gradient("Count", low = "mediumblue", high = "turquoise2") + 
+        scale_y_continuous(name = "Density") +
+        scale_fill_gradient("Density", low = "mediumblue", high = "turquoise2") + 
         geom_vline(aes_string(xintercept = mean(data$error)),col='magenta', size=2) +
-        geom_vline(aes_string(xintercept = median(data$error)), col='yellow', size=2) 
+        geom_vline(aes_string(xintercept = median(data$error)), col='yellow', size=2) +  
+        theme(plot.title = element_text(size = 16, face = "bold"))
       
     }
     
@@ -114,7 +114,8 @@ server <- function(input, output) {
       xlab("Polling Error (in %)") +
           scale_y_continuous(name = "Count") +
       scale_fill_gradient("count",  low = "mediumblue", high = "turquoise2") +
-      geom_vline(aes_string(xintercept = mean(data$error)),col='magenta', size=2) 
+      geom_vline(aes_string(xintercept = mean(data$error)),col='magenta', size=2) +  
+          theme(plot.title = element_text(size = 16, face = "bold"))
           
     }
 else {
@@ -126,7 +127,8 @@ else {
     labs(subtitle = "Polling error calculated as difference between polled democratic advantage and actual democratic advantage.") +
     xlab("Polling Error (in %)") +
     scale_y_continuous(name = "Count") +
-    scale_fill_gradient("Count", low = "mediumblue", high = "turquoise2")
+    scale_fill_gradient("Count", low = "mediumblue", high = "turquoise2") +  
+    theme(plot.title = element_text(size = 16, face = "bold"))
   
 }
 }
@@ -151,24 +153,27 @@ else {
       
       data %>%
         ggplot(aes_string(input$x, "error", color = "state")) + 
-        geom_point() + geom_smooth(aes_string(input$x, "error"), method = "lm", inherit.aes = F) +
+        geom_jitter(size = 3, alpha = 0.85) + 
+        geom_smooth(aes_string(input$x, "error"), method = "lm", inherit.aes = F) +
         stat_cor(aes_string(input$x, "error"), method = "pearson", label.x = 50, label.y = 3, show.legend = NA,
                  inherit.aes = FALSE, geom = "text") +
         xlab(x()) + ylab("Polling Error (in %)") + 
         ggtitle("Correlation between 2018 Midterm Polling Errors and Voting Trends in Previous Elections:") + 
         labs(subtitle = "Polling error calculated as difference between polled democratic advantage and actual democratic advantage.") + 
-        theme_minimal() + labs(color = "State") 
+        theme_linedraw() + labs(color = "State") +  
+        theme(plot.title = element_text(size = 16, face = "bold"))
       
     }
     
     else {
       
       data %>%
-        ggplot(aes_string(input$x, "error", color = "state")) + geom_point() +
+        ggplot(aes_string(input$x, "error", color = "state")) + geom_jitter(size = 3, alpha = 0.85) +
         xlab(x()) + ylab("Polling Error (in %)") + 
         ggtitle("Correlation between 2018 Midterm Polling Errors and Voting Trends in Previous Elections:") + 
         labs(subtitle = "Polling error calculated as difference between polled democratic advantage and actual democratic advantage.") + 
-        theme_minimal() + labs(color = "State") 
+        theme_linedraw() + labs(color = "State") +  
+        theme(plot.title = element_text(size = 16, face = "bold"))
       
       
     }
