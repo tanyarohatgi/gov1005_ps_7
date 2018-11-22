@@ -19,7 +19,7 @@ library(formattable)
 ```{r}
 #READING IN THE DATA:
 
-# Election Results Data
+# Election Results Data (Courtesy of Mr. Shroeder):
 data <- read_csv("mt_2_results.csv") %>%
   clean_names()
 
@@ -44,10 +44,7 @@ context <- read_csv("https://raw.githubusercontent.com/MEDSL/2018-elections/mast
 
 ```{r}
 
-#Despite this being a prep file I added a few comments here and there for clarity.
-
 #Using a modified version of the code I used in the second midterm:
-
 #Polling data:
 poll_data <- x %>%
   mutate(new_source = str_sub(source, 1, 6)) %>% 
@@ -55,10 +52,10 @@ poll_data <- x %>%
   filter(!str_detect(new_source, "gov")) %>%
   separate(new_source, c("district", "wave"), sep = "-") %>%
   group_by(district, response, wave) %>%
-  tally(final_weight) %>% 
+  tally(final_weight) %>% #Weighting tallies.
   spread(key = response, value = n) %>%
   group_by(district) %>%
-  mutate_all(funs_(interp(~replace(., is.na(.),0)))) %>% 
+  mutate_all(funs_(interp(~replace(., is.na(.),0)))) %>% #Changing NAs to 0s because they mean no observations.
   clean_names() %>%
   mutate(dem_adv = (dem/(dem + rep + und + x3 + x4 + x5 + x6)) * 100 - (rep/(dem + rep + und + x3 + x4 + x5 + x6)) * 100) %>% #Calculating poll Dem. advantage.
   select(district, wave, dem_adv) %>%
@@ -66,7 +63,7 @@ poll_data <- x %>%
   clean_names() %>%
   mutate(poll_1 = coalesce(x1, x2)) %>%
   mutate(last_poll = coalesce(poll_1, x3)) %>%
-  select(district, last_poll) %>%
+  select(district, last_poll) %>% #Creating a column with all the last polls.
   ungroup(district) %>%
   mutate(district = str_to_upper(district))
 
