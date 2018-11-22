@@ -14,6 +14,15 @@ library(ggpubr)
 library(devtools)
 
 data <- read_rds("graph1.rds")
+new <- read_rds("c.rds") %>%
+  mutate(stance = case_when(stance == "kav_oppose" ~ "Kavanaugh Appointment (Oppose)", 
+                            stance == "mu_support" ~ "Robert Mueller's Work/Mandate (Support)",
+                            stance == "ice_ab_support" ~ "Abolishment of ICE (Support)",
+                            stance == "col_agree" ~ "Trump Colluded with Russia (Agree)",
+                            stance == "fem_support" ~ "Feminism (Support)",
+                            stance == "sp_support" ~ "Single-Payer Healthcare System (Support)"))
+
+new$stance <- as.factor(new$stance)
 
 
 ui <- fluidPage(
@@ -75,6 +84,27 @@ ui <- fluidPage(
       p("Furthermore, given that the p-values much higher than the commonly accepted significance cut-off of 0.05, we must reject our null hypothesis (that a statistically significant correlation between the x-axis variables and polling error exists), and so we cannot conclude that such a relationship exists.",
         style = "font-size : 10pt"),
       h4("")
+    )),
+  
+  sidebarLayout(
+    sidebarPanel(
+      selectInput(
+        inputId = "p_i",
+        label = "Select an Ideological/Policy Stance:",
+        choices = levels(new$stance)
+      ),
+      
+      checkboxInput("bestfit2", label = "Show line of best fit.")
+      
+    ),
+    
+    # Show a plot of the correlations
+    mainPanel(
+      h3("3. Polling Errors and Policy/Ideology Factors:"),
+      plotOutput("scatterPlot2"),
+      p("Here we can see some strong and significant correlations between agreement with ideological stances and greater polling error. Opposition to the appointment of Kavanaugh to the Supreme Court, support for feminism, and support for instituting a Single-Payer healthcare system all have notable to strong correlations with the overestimation of democratic advantage in the polls.
+        Therefore, the greater the percentage of respondents who expressed support for these stances (often classified as liberal or Democratic stances), the more likely the poll was to think Democrats would do far better than they actually did.",
+        style = "font-size : 10pt")
     ))
   
 
@@ -93,7 +123,7 @@ server <- function(input, output) {
         geom_density(alpha = .3, color = "darkblue", fill="darkblue") +
         theme_minimal() + 
         ggtitle("Density Distribution of Polling Errors (in %):") +
-        labs(subtitle = "Polling error calculated as difference between polled democratic advantage and actual democratic advantage.") +
+        labs(subtitle = "Polling error calculated as difference between polled Democratic advantage and actual Democratic advantage.") +
         xlab("Polling Error (in %)") +
         scale_y_continuous(name = "Density") +
         scale_fill_gradient("Density", low = "mediumblue", high = "turquoise2") + 
@@ -110,7 +140,7 @@ server <- function(input, output) {
       ggplot(aes_string(x = "error")) + geom_histogram(aes(fill = ..count..), binwidth = input$bins, alpha = 0.9) + 
       theme_minimal() + 
       ggtitle("Frequency Distribution of Polling Errors (in %):") +
-          labs(subtitle = "Polling error calculated as difference between polled democratic advantage and actual democratic advantage.") +
+          labs(subtitle = "Polling error calculated as difference between polled Democratic advantage and actual Democratic advantage.") +
       xlab("Polling Error (in %)") +
           scale_y_continuous(name = "Count") +
       scale_fill_gradient("count",  low = "mediumblue", high = "turquoise2") +
@@ -124,7 +154,7 @@ else {
     ggplot(aes_string(x = "error")) + geom_histogram(aes(fill = ..count..), binwidth = input$bins) + 
     theme_minimal() +
     ggtitle("Frequency Distribution of Polling Errors (in %):") +
-    labs(subtitle = "Polling error calculated as difference between polled democratic advantage and actual democratic advantage.") +
+    labs(subtitle = "Polling error calculated as difference between polled Democratic advantage and actual Democratic advantage.") +
     xlab("Polling Error (in %)") +
     scale_y_continuous(name = "Count") +
     scale_fill_gradient("Count", low = "mediumblue", high = "turquoise2") +  
@@ -159,7 +189,7 @@ else {
                  inherit.aes = FALSE, geom = "text") +
         xlab(x()) + ylab("Polling Error (in %)") + 
         ggtitle("Correlation between 2018 Midterm Polling Errors and Voting Trends in Previous Elections:") + 
-        labs(subtitle = "Polling error calculated as difference between polled democratic advantage and actual democratic advantage.") + 
+        labs(subtitle = "Polling error calculated as difference between polled Democratic advantage and actual Democratic advantage.") + 
         theme_linedraw() + labs(color = "State") +  
         theme(plot.title = element_text(size = 16, face = "bold"))
       
@@ -171,7 +201,7 @@ else {
         ggplot(aes_string(input$x, "error", color = "state")) + geom_jitter(size = 3, alpha = 0.85) +
         xlab(x()) + ylab("Polling Error (in %)") + 
         ggtitle("Correlation between 2018 Midterm Polling Errors and Voting Trends in Previous Elections:") + 
-        labs(subtitle = "Polling error calculated as difference between polled democratic advantage and actual democratic advantage.") + 
+        labs(subtitle = "Polling error calculated as difference between polled Democratic advantage and actual Democratic advantage.") + 
         theme_linedraw() + labs(color = "State") +  
         theme(plot.title = element_text(size = 16, face = "bold"))
       
@@ -179,6 +209,39 @@ else {
     }
     
   })
+  
+  output$scatterPlot2 <- renderPlot({
+    
+if (input$bestfit2 == TRUE) {
+    new %>%
+      filter(stance == input$p_i) %>%
+      ggplot(aes_string("count", "error", color = "district")) + geom_point(size = 3) +
+      xlab("No. of Respondents That Agree") + ylab("Polling Error (in %)") +
+     geom_smooth(aes_string("count", "error"), method = "lm", inherit.aes = F) +
+      stat_cor(aes_string("count", "error"), method = "pearson", show.legend = NA,
+             inherit.aes = FALSE, geom = "text") +
+      ggtitle("Correlation between 2018 Midterm Polling Errors and Policy/Ideological Positions Held by Poll Respondents:") + 
+      labs(subtitle = "Polling error calculated as difference between polled Democratic advantage and actual Democratic advantage.") + 
+      theme_linedraw() + labs(color = "District") +  
+      theme(plot.title = element_text(size = 16, face = "bold"))
+      
+}
+    
+    else {
+      
+      new %>%
+        filter(stance == input$p_i) %>%
+        ggplot(aes_string("count", "error", color = "district")) + geom_point(size = 3) +
+        xlab("No. of Respondents That Agree") + ylab("Polling Error (in %)") +
+        ggtitle("Correlation between 2018 Midterm Polling Errors and Policy/Ideological Positions Held by Poll Respondents:") + 
+        labs(subtitle = "Polling error calculated as difference between polled Democratic advantage and actual Democratic advantage.") + 
+        theme_linedraw() + labs(color = "District") +  
+        theme(plot.title = element_text(size = 16, face = "bold"))
+      
+    }
+    
+  })
+  
   
 }
 

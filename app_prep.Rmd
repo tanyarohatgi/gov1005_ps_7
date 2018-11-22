@@ -109,6 +109,104 @@ graph1 <- error_data %>%
   left_join(context_data, by = "state") #Joining the two datasets in order to have error and context data in the same variable for use in the Shiny app.
 
 write_rds(graph1, "graph1.rds")
-write_rds(graph1, "midterm_analysis/graph1.rds")
+
+
+#Code for 3rd graphic:
+
+kavanaugh <- x %>%
+  mutate(new_source = str_sub(source, 1, 4)) %>% 
+  filter(!str_detect(new_source, "se")) %>%
+  filter(!str_detect(new_source, "go")) %>%
+  group_by(new_source) %>%
+  filter(!is.na(APPKAV)) %>%
+  count(APPKAV) %>%
+  spread(key = APPKAV, value = n) %>%
+  clean_names() %>%
+  mutate(kav_oppose = oppose/(oppose + support + dont_know)*100) %>%
+  select(new_source, kav_oppose)
+
+mueller <- x %>%
+   mutate(new_source = str_sub(source, 1, 4)) %>% 
+  filter(!str_detect(new_source, "se")) %>%
+  filter(!str_detect(new_source, "go")) %>%
+  group_by(new_source) %>%
+  filter(!is.na(MUELLER)) %>%
+  count(MUELLER) %>%
+  spread(key = MUELLER, value = n) %>%
+  clean_names() %>%
+  mutate(mu_support = support/(oppose + support + dont_know)*100) %>%
+  select(new_source, mu_support)
+
+  
+ice <- x %>%
+  mutate(new_source = str_sub(source, 1, 4)) %>% 
+  filter(!str_detect(new_source, "se")) %>%
+  filter(!str_detect(new_source, "go")) %>%
+  group_by(new_source) %>%
+  filter(!is.na(ABOLOISHICE)) %>%
+  count(ABOLOISHICE) %>%
+  spread(key = ABOLOISHICE, value = n) %>%
+  clean_names() %>%
+  mutate(ice_ab_support = support/(oppose + support + dont_know)*100) %>%
+  select(new_source, ice_ab_support)
+
+collusion <- x %>%
+  mutate(new_source = str_sub(source, 1, 4)) %>% 
+  filter(!str_detect(new_source, "se")) %>%
+  filter(!str_detect(new_source, "go")) %>%
+  group_by(new_source) %>%
+  filter(!is.na(COLLUDE)) %>%
+  count(COLLUDE) %>%
+  spread(key = COLLUDE, value = n) %>%
+  clean_names() %>%
+  mutate(col_agree = agree/(agree + disagree + dont_know)*100) %>%
+  select(new_source, col_agree)
+
+feminism <- x %>%
+  mutate(new_source = str_sub(source, 1, 4)) %>% 
+  filter(!str_detect(new_source, "se")) %>%
+  filter(!str_detect(new_source, "go")) %>%
+  group_by(new_source) %>%
+  filter(!is.na(FEMINISM)) %>%
+  count(FEMINISM) %>%
+  spread(key = FEMINISM, value = n) %>%
+  clean_names() %>%
+  mutate(fem_support = support/(support + oppose + dont_know)*100) %>%
+  select(new_source, fem_support)
+
+single_payer <- x %>%
+  mutate(new_source = str_sub(source, 1, 4)) %>% 
+  filter(!str_detect(new_source, "se")) %>%
+  filter(!str_detect(new_source, "go")) %>%
+  group_by(new_source) %>%
+  filter(!is.na(SINGLEPAY)) %>%
+  count(SINGLEPAY) %>%
+  spread(key = SINGLEPAY, value = n) %>%
+  clean_names() %>%
+  mutate(sp_support = support/(support + oppose + dont_know)*100) %>%
+  select(new_source, sp_support)
+
+error_data2 <- poll_data %>%
+  inner_join(js_data, by = "district") %>%
+  mutate(error = last_poll - actual_results) %>%
+  mutate_if(is.numeric, round, 1)
+
+a <- bind_rows(kavanaugh, mueller, ice, collusion, feminism, single_payer) %>%
+  ungroup(new_source) %>%
+  mutate(district = str_to_upper(new_source)) %>%
+  select(-new_source) 
+
+b <- left_join(error_data2, a, by = "district")
+
+c <- b %>%
+  gather(stance, count, c(kav_oppose, mu_support, ice_ab_support, col_agree, fem_support, sp_support)) %>%
+  filter(!is.na(count))
+
+c$stance <- as.factor(c$stance)
+
+
+write_rds(c, "c.rds")
+
+
 ```
 
